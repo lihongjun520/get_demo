@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.appsys.dao.back.appinfo.BackAppInfoMapper">
+	<!-- 负责分页查询按条件APP带审核状态列表信息的总记录数 -->
+	 <select id="queryTotalCount" resultType="java.lang.Integer">
+		SELECT COUNT(1) FROM `app_info` a  where 1 = 1
+	 	<if test="querySoftwareName != null">
+			and a.softwareName like CONCAT('%',#{querySoftwareName},'%')
+		</if>
+		<if test="queryFlatformId != null and queryFlatformId != 0">
+			and a.flatformId = #{queryFlatformId}
+		</if>
+		<if test="queryCategoryLevel1 != null and queryCategoryLevel1 !=0">
+			and a.categoryLevel1 = #{queryCategoryLevel1}
+		</if>
+		<if test="queryCategoryLevel2 != null and queryCategoryLevel2 !=0">
+			and a.categoryLevel2 = #{queryCategoryLevel2}
+		</if>
+		<if test="queryCategoryLevel3 != null and queryCategoryLevel3 !=0">
+			and a.categoryLevel3 = #{queryCategoryLevel3}
+		</if>
+			and a.status = 1 
+	</select> 
+
+	<!-- 负责按条件查询审核状态的APP信息列表 -->
+	<select id="queryAppPageInfo" resultType="AppInfo">
+		SELECT a.id,a.`softwareName`,a.`APKName`,a.`softwareSize`,
+		(
+		SELECT valueName FROM data_dictionary WHERE typecode = 'APP_FLATFORM'
+		AND valueid = a.`flatformId`
+		) flatFormName, a.`flatformId`,
+		( SELECT categoryName FROM `app_category` WHERE id =
+		a.`categoryLevel1`) categoryLevel1Name,
+		a.`categoryLevel1`,
+		( SELECT categoryName FROM `app_category` WHERE id =
+		a.`categoryLevel2`) categoryLevel2Name,
+		a.`categoryLevel2`,
+		( SELECT categoryName FROM `app_category` WHERE id =
+		a.`categoryLevel3`) categoryLevel3Name,
+		a.`categoryLevel3`,
+		(SELECT valueName FROM data_dictionary WHERE typecode = 'APP_STATUS' AND
+		valueId = a.`status`) statusName,
+		a.`status`,
+		a.`downloads`,
+		(SELECT versionNo FROM `app_version` WHERE id = a.`versionId`) versionNo,
+		a.`versionId` FROM `app_info` a
+		where 1=1 
+			<if test="querySoftwareName != null and querySoftwareName != ''">
+				and a.softwareName like CONCAT('%',#{querySoftwareName},'%')
+			</if>
+			<if test="queryFlatformId != null and queryFlatformId != 0">
+				and a.flatformId = #{queryFlatformId}
+			</if>
+			<if test="queryCategoryLevel1 != null and queryCategoryLevel1 !=0">
+				and a.categoryLevel1 = #{queryCategoryLevel1}
+			</if>
+			<if test="queryCategoryLevel2 != null and queryCategoryLevel2 !=0">
+				and a.categoryLevel2 = #{queryCategoryLevel2}
+			</if>
+			<if test="queryCategoryLevel3 != null and queryCategoryLevel3 !=0">
+				and a.categoryLevel3 = #{queryCategoryLevel3}
+			</if>
+				and a.status = 1 
+		
+		ORDER BY a.id desc limit #{from},#{pageSize}
+	</select>
+
+
+	<!-- 查询所有平台列表信息 -->
+	<select id="queryAllFlatForm" resultType="DataDictionary">
+		SELECT * FROM `data_dictionary` WHERE typeCode = 'APP_FLATFORM'
+	</select>
+
+	<!-- 查询所有一级列表信息 -->
+	<select id="queryCatgoryList" resultType="AppCategory">
+		SELECT * FROM `app_category`
+		<where>
+			<!-- 默认查询一级分类 -->
+			<if test="categoryId == null">
+				and parentId is null
+			</if>
+			<if test="categoryId != null">
+				and parentId = #{categoryId}
+			</if>
+		</where>
+	</select>
+	<!-- 查询app信息 -->
+	<select id="queryAppInfo" resultType="AppInfo" parameterType="int">
+	SELECT a.id,a.`softwareName`,a.`APKName`,a.supportROM,a.interfaceLanguage,a.appInfo,  a.`softwareSize`,
+		(
+		SELECT valueName FROM data_dictionary WHERE typecode = 'APP_FLATFORM'
+		AND valueid = a.`flatformId`
+		) flatFormName,
+		( SELECT categoryName FROM `app_category` WHERE id =
+		a.`categoryLevel1`) categoryLevel1Name,
+
+		( SELECT categoryName FROM `app_category` WHERE id =
+		a.`categoryLevel2`) categoryLevel2Name,
+
+		( SELECT categoryName FROM `app_category` WHERE id =
+		a.`categoryLevel3`) categoryLevel3Name,
+
+		(SELECT valueName FROM data_dictionary WHERE typecode = 'APP_STATUS' AND
+		valueId = a.`status`) statusName,
+		a.`status`,
+		a.`downloads`,
+		(SELECT versionNo FROM `app_version` WHERE id = a.`versionId`) versionNo,
+		a.`versionId` FROM `app_info` a , data_dictionary d 		
+		WHERE d.typeCode ='APP_STATUS' AND
+        d.valueId =a.status AND d.valueName='待审核'AND a.id = #{aid}
+	</select>
+	
+	
+	<!-- 查询本版信息 -->
+	<select id="queryAppVersion" resultType="AppVersion">
+	        SELECT * FROM app_version WHERE id = #{vid}
+	</select>
+	 <!-- 修改 -->
+	<update id="updateAppInfo">
+	UPDATE app_info SET `status` = #{aid}  WHERE id= #{id}
+	</update>
+</mapper>
